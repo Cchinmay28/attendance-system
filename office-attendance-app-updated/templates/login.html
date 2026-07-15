@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Office Attendance — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#02060f;--surface:#080f1e;--surface2:#0c1526;--border:#162035;--border2:#1e3050;
+  --accent:#00d4ff;--accent2:#0099cc;--green:#00ff88;--orange:#ff6b2b;
+  --text:#e8f4ff;--muted:#4a6580;--muted2:#2a3f55;--danger:#ff3b3b;--warn:#ffaa00;
+}
+
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  position:relative;
+}
+
+/* ── Deep space base ── */
+.bg-base{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(0,212,255,.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 90%, rgba(0,153,204,.06) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 40% at 60% 40%, rgba(0,255,136,.03) 0%, transparent 50%),
+    linear-gradient(180deg, #02060f 0%, #030912 50%, #020810 100%);
+}
+
+/* ── Animated star field ── */
+.stars{position:fixed;inset:0;z-index:0;overflow:hidden}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle linear infinite}
+@keyframes twinkle{
+  0%,100%{opacity:.1;transform:scale(1)}
+  50%{opacity:.8;transform:scale(1.4)}
+}
+
+/* ── Scanline overlay ── */
+.scanlines{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,.08) 2px,
+    rgba(0,0,0,.08) 4px
+  );
+}
+
+/* ── Hex grid ── */
+.hexgrid{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  opacity:.5;
+}
+
+/* ── Data stream lines (left + right edges) ── */
+.streams{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.stream{position:absolute;top:0;width:1px;background:linear-gradient(180deg,transparent,rgba(0,212,255,.6),transparent);animation:streamfall linear infinite}
+@keyframes streamfall{0%{transform:translateY(-100%);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(100vh);opacity:0}}
+
+/* ── Corner brackets (HUD style) ── */
+.hud{position:fixed;inset:0;z-index:1;pointer-events:none}
+.hud::before,.hud::after{content:'';position:absolute;width:60px;height:60px;border-color:rgba(0,212,255,.35);border-style:solid}
+.hud::before{top:20px;left:20px;border-width:2px 0 0 2px}
+.hud::after{bottom:20px;right:20px;border-width:0 2px 2px 0}
+.hud-br,.hud-tl{position:fixed;pointer-events:none;z-index:1}
+.hud-tl{top:20px;right:20px;width:60px;height:60px;border-top:2px solid rgba(0,212,255,.35);border-right:2px solid rgba(0,212,255,.35)}
+.hud-br{bottom:20px;left:20px;width:60px;height:60px;border-bottom:2px solid rgba(0,212,255,.35);border-left:2px solid rgba(0,212,255,.35)}
+
+/* ── Ticker tape (bottom) ── */
+.ticker{
+  position:fixed;bottom:0;left:0;right:0;z-index:2;
+  height:28px;
+  background:rgba(0,212,255,.04);
+  border-top:1px solid rgba(0,212,255,.12);
+  overflow:hidden;display:flex;align-items:center;
+}
+.ticker-inner{
+  display:flex;gap:0;white-space:nowrap;
+  animation:tickerscroll 30s linear infinite;
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;color:rgba(0,212,255,.45);
+  letter-spacing:.08em;
+}
+@keyframes tickerscroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ── Floating particles ── */
+.particles{position:fixed;inset:0;pointer-events:none;z-index:1}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:rise linear infinite}
+@keyframes rise{
+  0%{opacity:0;transform:translateY(0) scale(0)}
+  15%{opacity:.7}
+  85%{opacity:.3}
+  100%{opacity:0;transform:translateY(-100vh) scale(1.5)}
+}
+
+/* ── Card ── */
+.wrap{position:relative;z-index:10;width:100%;max-width:460px;padding:1rem}
+
+.card{
+  background:rgba(6,12,24,.92);
+  backdrop-filter:blur(24px);
+  border:1px solid rgba(0,212,255,.18);
+  border-radius:4px;
+  padding:0;
+  box-shadow:
+    0 0 0 1px rgba(0,212,255,.06),
+    0 40px 100px rgba(0,0,0,.8),
+    0 0 60px rgba(0,212,255,.04),
+    inset 0 1px 0 rgba(0,212,255,.1);
+  animation:cardIn .6s cubic-bezier(.16,1,.3,1) both;
+  position:relative;
+  overflow:hidden;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(40px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* Card inner glow line */
+.card::before{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,.5),transparent);
+}
+
+/* Card header bar */
+.card-header{
+  padding:.6rem 1.5rem;
+  background:rgba(0,212,255,.04);
+  border-bottom:1px solid rgba(0,212,255,.12);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-header-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;color:rgba(0,212,255,.5);
+  letter-spacing:.12em;text-transform:uppercase;
+}
+.card-status-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 6px var(--green);
+  animation:blink 2s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.card-body{padding:2rem 2rem 2rem}
+
+/* ── Brand ── */
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:2rem}
+.brand-icon{
+  width:48px;height:48px;border-radius:4px;
+  background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(0,153,204,.1));
+  border:1px solid rgba(0,212,255,.3);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  position:relative;
+  box-shadow:0 0 20px rgba(0,212,255,.15),inset 0 1px 0 rgba(0,212,255,.2);
+}
+.brand-icon::after{
+  content:'';position:absolute;inset:0;border-radius:4px;
+  background:linear-gradient(135deg,rgba(0,212,255,.08),transparent);
+}
+.brand-text h1{
+  font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;
+  color:var(--text);letter-spacing:.02em;
+}
+.brand-text p{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.05em;font-family:'JetBrains Mono',monospace}
+
+/* ── Tabs ── */
+.tabs{
+  display:flex;gap:0;
+  background:rgba(0,0,0,.3);
+  border:1px solid var(--border2);
+  border-radius:4px;
+  padding:3px;
+  margin-bottom:1.75rem;
+}
+.tab{
+  flex:1;padding:9px 8px;border:none;background:transparent;
+  color:var(--muted);font-family:'Inter',sans-serif;font-size:12px;font-weight:500;
+  border-radius:3px;cursor:pointer;transition:all .25s ease;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  letter-spacing:.03em;
+}
+.tab.active{
+  background:rgba(0,212,255,.1);
+  color:var(--accent);
+  border:1px solid rgba(0,212,255,.25);
+  box-shadow:0 0 12px rgba(0,212,255,.1),inset 0 1px 0 rgba(0,212,255,.1);
+}
+.tab.admin-tab.active{
+  background:rgba(0,255,136,.08);
+  color:var(--green);
+  border-color:rgba(0,255,136,.25);
+  box-shadow:0 0 12px rgba(0,255,136,.1),inset 0 1px 0 rgba(0,255,136,.1);
+}
+
+/* ── Panels ── */
+.panel{animation:panelIn .3s ease both}
+@keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Fields ── */
+.field{margin-bottom:1.1rem}
+.field label{
+  display:flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:600;color:var(--muted);
+  margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;
+}
+.field label::before{content:'//';color:var(--muted2);font-size:10px}
+.field-wrap{position:relative}
+
+input[type=text],input[type=password]{
+  width:100%;padding:11px 14px;
+  background:rgba(0,0,0,.4);
+  border:1px solid var(--border2);
+  border-radius:3px;
+  color:var(--text);
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;outline:none;
+  transition:all .2s;
+  letter-spacing:.04em;
+}
+input::placeholder{color:var(--muted2);font-family:'JetBrains Mono',monospace;font-size:12px}
+input:focus{
+  border-color:rgba(0,212,255,.5);
+  background:rgba(0,212,255,.03);
+  box-shadow:0 0 0 3px rgba(0,212,255,.08),0 0 20px rgba(0,212,255,.05);
+}
+.admin-focus input:focus{
+  border-color:rgba(0,255,136,.4);
+  background:rgba(0,255,136,.02);
+  box-shadow:0 0 0 3px rgba(0,255,136,.07);
+}
+.eye{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--muted);
+  font-size:14px;transition:color .2s;padding:4px;
+}
+.eye:hover{color:var(--accent)}
+
+/* ── Buttons ── */
+.btn{
+  width:100%;padding:12px;margin-top:.5rem;
+  border:none;border-radius:3px;
+  color:#02060f;font-family:'Space Grotesk',sans-serif;
+  font-size:13px;font-weight:700;cursor:pointer;
+  letter-spacing:.08em;text-transform:uppercase;
+  position:relative;overflow:hidden;transition:all .25s ease;
+}
+.btn-emp{
+  background:linear-gradient(90deg,#00b4d8,#00d4ff);
+  box-shadow:0 0 20px rgba(0,212,255,.3),0 4px 15px rgba(0,0,0,.3);
+}
+.btn-adm{
+  background:linear-gradient(90deg,#00cc6a,#00ff88);
+  box-shadow:0 0 20px rgba(0,255,136,.25),0 4px 15px rgba(0,0,0,.3);
+}
+.btn::before{
+  content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
+  transition:left .4s ease;
+}
+.btn:hover::before{left:100%}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.btn:active{transform:translateY(0);filter:brightness(.95)}
+.btn-inner{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:8px}
+
+/* ── Error ── */
+.err{
+  background:rgba(255,59,59,.08);border:1px solid rgba(255,59,59,.25);
+  color:#ff8080;font-size:12px;padding:10px 13px;border-radius:3px;
+  margin-bottom:1rem;display:flex;align-items:center;gap:8px;
+  font-family:'JetBrains Mono',monospace;
+  animation:shake .4s ease;
+}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* ── Demo bar ── */
+.demo-bar{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.2);
+  color:#ffcc44;font-size:11px;padding:10px 13px;border-radius:3px;
+  margin-top:1.2rem;line-height:1.5;
+  font-family:'JetBrains Mono',monospace;
+}
+
+/* ── Hint ── */
+.hint{
+  font-size:11px;color:var(--muted);margin-top:1rem;
+  text-align:center;line-height:1.8;padding:10px 0;
+  border-top:1px solid var(--border);
+  font-family:'JetBrains Mono',monospace;
+}
+.hint code{
+  background:rgba(0,212,255,.1);color:var(--accent);
+  padding:2px 6px;border-radius:2px;font-size:11px;
+  border:1px solid rgba(0,212,255,.2);
+}
+</style>
+</head>
+<body>
+
+<!-- Deep space base -->
+<div class="bg-base"></div>
+
+<!-- Star field -->
+<div class="stars" id="stars"></div>
+
+<!-- Scanlines -->
+<div class="scanlines"></div>
+
+<!-- Hex grid canvas -->
+<canvas class="hexgrid" id="hexgrid"></canvas>
+
+<!-- Data streams -->
+<div class="streams" id="streams"></div>
+
+<!-- HUD corners -->
+<div class="hud"></div>
+<div class="hud-tl"></div>
+<div class="hud-br"></div>
+
+<!-- Particles -->
+<div class="particles" id="particles"></div>
+
+<!-- Ticker -->
+<div class="ticker">
+  <div class="ticker-inner" id="ticker-inner"></div>
+</div>
+
+<!-- Login card -->
+<div class="wrap">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-header-label">SYS://AUTH_PORTAL &nbsp;v2.0</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(0,255,136,.45);letter-spacing:.1em">SECURE</span>
+        <div class="card-status-dot"></div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="brand">
+        <div class="brand-icon">🏢</div>
+        <div class="brand-text">
+          <h1>Office Attendance</h1>
+          <p>// network-verified attendance system</p>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab {% if not error_admin %}active{% endif %}" onclick="sw('emp')" id="tab-emp">
+          <span>◈</span> Employee
+        </button>
+        <button class="tab admin-tab {% if error_admin %}active{% endif %}" onclick="sw('adm')" id="tab-adm">
+          <span>⬡</span> Admin
+        </button>
+      </div>
+
+      <!-- Employee Panel -->
+      <div id="emp-panel" class="panel" style="display:{% if error_admin %}none{% else %}block{% endif %}">
+        {% if error_emp %}<div class="err">⚡ {{ error_emp }}</div>{% endif %}
+        <form method="POST">
+          <input type="hidden" name="login_type" value="employee">
+          <div class="field">
+            <label>Employee ID</label>
+            <input type="text" name="employee_id" placeholder="e.g. 101" autocomplete="username" required>
+          </div>
+          <div class="field">
+            <label>Password</label>
+            <div class="field-wrap">
+              <input type="password" name="employee_password" id="epw" placeholder="••••••••••" required>
+              <button type="button" class="eye" onclick="tog('epw',this)">👁</button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-emp">
+            <span class="btn-inner">Authenticate &nbsp;→</span>
+          </button>
+        </form>
+        <p class="hint">
+          demo → <code>101</code>/<code>pass101</code> &nbsp;·&nbsp; <code>102</code>/<code>pass102</code> &nbsp;·&nbsp; <code>103</code>/<code>pass103</code>
+        </p>
+      </div>
+
+      <!-- Admin Panel -->
+      <div id="adm-panel" class="panel admin-focus" style="display:{% if error_admin %}block{% else %}none{% endif %}">
+        {% if error_admin %}<div class="err">⚡ {{ error_admin }}</div>{% endif %}
+        <form method="POST">
+          <input type="hidden" name="login_type" value="admin">
+          <div class="field">
+            <label>Admin ID</label>
+            <input type="text" name="admin_id" placeholder="root_user" required>
+          </div>
+          <div class="field">
+            <label>Admin Password</label>
+            <div class="field-wrap">
+              <input type="password" name="admin_password" id="apw" placeholder="••••••••••" required>
+              <button type="button" class="eye" onclick="tog('apw',this)">👁</button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-adm">
+            <span class="btn-inner">Access Admin &nbsp;→</span>
+          </button>
+        </form>
+        <p class="hint">admin → <code>admin</code> / <code>admin123</code></p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Stars ── */
+const starsEl=document.getElementById('stars');
+for(let i=0;i<120;i++){
+  const s=document.createElement('div');
+  const sz=Math.random()*2+.5;
+  s.className='star';
+  s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${sz}px;height:${sz}px;animation-duration:${3+Math.random()*5}s;animation-delay:${Math.random()*6}s;opacity:${.1+Math.random()*.4}`;
+  starsEl.appendChild(s);
+}
+
+/* ── Hex grid canvas ── */
+(function(){
+  const cv=document.getElementById('hexgrid');
+  const ctx=cv.getContext('2d');
+  function resize(){cv.width=window.innerWidth;cv.height=window.innerHeight}
+  resize();
+  window.addEventListener('resize',resize);
+  const S=48,h=S*Math.sqrt(3)/2;
+  function drawHex(x,y){
+    ctx.beginPath();
+    for(let i=0;i<6;i++){
+      const a=Math.PI/180*(60*i-30);
+      i===0?ctx.moveTo(x+S*Math.cos(a),y+S*Math.sin(a)):ctx.lineTo(x+S*Math.cos(a),y+S*Math.sin(a));
+    }
+    ctx.closePath();
+    ctx.strokeStyle='rgba(0,212,255,0.045)';
+    ctx.lineWidth=.8;
+    ctx.stroke();
+  }
+  function draw(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for(let row=0;row<cv.height/(h)+2;row++){
+      for(let col=0;col<cv.width/(S*1.5)+2;col++){
+        const x=col*S*1.5;
+        const y=row*h*2+(col%2)*h;
+        drawHex(x,y);
+      }
+    }
+  }
+  draw();
+  window.addEventListener('resize',draw);
+})();
+
+/* ── Data streams ── */
+(function(){
+  const el=document.getElementById('streams');
+  const cols=[50,180,320,460,580,640];
+  cols.forEach(x=>{
+    const s=document.createElement('div');
+    s.className='stream';
+    s.style.cssText=`left:${x}px;height:${80+Math.random()*160}px;animation-duration:${4+Math.random()*6}s;animation-delay:${Math.random()*5}s;opacity:.5`;
+    el.appendChild(s);
+  });
+})();
+
+/* ── Particles ── */
+(function(){
+  const el=document.getElementById('particles');
+  const colors=['#00d4ff','#00ff88','#ff6b2b','rgba(0,212,255,.5)'];
+  for(let i=0;i<20;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const sz=1+Math.random()*2.5;
+    p.style.cssText=`left:${Math.random()*100}%;bottom:${Math.random()*15}%;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};animation-duration:${8+Math.random()*12}s;animation-delay:${Math.random()*10}s;border-radius:50%`;
+    el.appendChild(p);
+  }
+})();
+
+/* ── Ticker ── */
+(function(){
+  const msgs=[
+    'SYS_STATUS: ONLINE','IP_VERIFY: ACTIVE','ENCRYPTION: AES-256','ATTENDANCE_MODULE: v2.0',
+    'NETWORK: SECURED','SESSION_TIMEOUT: 30min','LAST_SYNC: 00:00:01','UPTIME: 99.97%',
+    'NODES: 3 ACTIVE','CLOCK_SYNC: OK','FIREWALL: ENABLED','AUDIT_LOG: RUNNING',
+  ];
+  const full=msgs.join(' &nbsp;·&nbsp; ')+' &nbsp;·&nbsp; '+msgs.join(' &nbsp;·&nbsp; ')+' &nbsp;·&nbsp; ';
+  const el=document.getElementById('ticker-inner');
+  el.innerHTML=full;
+})();
+
+/* ── Tab switch ── */
+function sw(t){
+  document.getElementById('tab-emp').classList.toggle('active',t==='emp');
+  document.getElementById('tab-adm').classList.toggle('active',t==='adm');
+  document.getElementById('emp-panel').style.display=t==='emp'?'block':'none';
+  document.getElementById('adm-panel').style.display=t==='adm'?'block':'none';
+}
+
+/* ── Password toggle ── */
+function tog(id,btn){
+  const i=document.getElementById(id);
+  i.type=i.type==='password'?'text':'password';
+  btn.textContent=i.type==='password'?'👁':'🙈';
+}
+</script>
+</body>
+</html>

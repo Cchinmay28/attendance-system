@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Office Attendance — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060b18;--surface:#0d1424;--s2:#111c30;--s3:#162035;
+  --border:#1e2d47;--border2:#243450;
+  --accent:#6366f1;--accent2:#8b5cf6;--teal:#14b8a6;--pink:#ec4899;
+  --text:#f0f4ff;--muted:#7a8ba8;--danger:#ef4444;--success:#10b981;--warn:#f59e0b;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.bg-fixed{position:fixed;inset:0;z-index:0;pointer-events:none}
+.orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:.08;animation:pulse 8s ease-in-out infinite}
+.orb1{width:700px;height:700px;background:#6366f1;top:-200px;left:-200px}
+.orb2{width:500px;height:500px;background:#14b8a6;bottom:-150px;right:-100px;animation-delay:4s}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.grid{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(99,102,241,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.03) 1px,transparent 1px);
+  background-size:70px 70px}
+
+.layout{position:relative;z-index:1;display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{width:260px;flex-shrink:0;background:rgba(13,20,36,.95);backdrop-filter:blur(20px);border-right:1px solid var(--border);padding:2rem 1.5rem;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;overflow-y:auto}
+.sb-brand{display:flex;align-items:center;gap:12px;margin-bottom:2.5rem}
+.sb-icon{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 20px rgba(99,102,241,.4)}
+.sb-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--text)}
+.sb-sub{font-size:11px;color:var(--muted)}
+
+.sb-profile{background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:1rem;margin-bottom:1.5rem}
+.sb-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:.75rem}
+.sb-name{font-size:14px;font-weight:600;color:var(--text)}
+.sb-dept{font-size:12px;color:var(--muted);margin-top:2px}
+.sb-id{font-size:11px;color:var(--accent);margin-top:4px;font-family:monospace}
+.sb-office-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.25);color:#5eead4;padding:2px 8px;border-radius:20px;margin-top:5px}
+
+.sb-nav{flex:1}
+.sb-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;margin-bottom:4px;text-decoration:none}
+.sb-link:hover,.sb-link.active{background:rgba(99,102,241,.1);color:var(--text);border-left:3px solid var(--accent)}
+.sb-link:not(.active){border-left:3px solid transparent}
+
+.sb-logout{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;color:var(--danger);font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;transition:all .2s;border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.05);margin-top:1rem}
+.sb-logout:hover{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4)}
+
+/* Main */
+.main{margin-left:260px;flex:1;padding:2.5rem}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:2.5rem}
+.page-title{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;background:linear-gradient(90deg,#f0f4ff,#a5b4fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.date-badge{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;color:var(--muted)}
+
+/* Pages */
+.page{display:none}.page.active{display:block;animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Status ring */
+.status-hero{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:2.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:2.5rem;position:relative;overflow:hidden}
+.status-hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(99,102,241,.04),transparent);pointer-events:none}
+.ring-wrap{position:relative;width:120px;height:120px;flex-shrink:0}
+.ring-bg{width:120px;height:120px;border-radius:50%;border:3px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative}
+.ring-icon{font-size:36px;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.status-info h2{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700}
+.status-info p{color:var(--muted);font-size:14px;margin-top:5px;line-height:1.6}
+.status-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;margin-top:10px}
+.badge-in{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#34d399}
+.badge-out{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);color:#a5b4fc}
+.badge-none{background:rgba(122,139,168,.1);border:1px solid rgba(122,139,168,.3);color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;animation:blink 1.5s ease-in-out infinite}
+.dot-green{background:#10b981}.dot-purple{background:var(--accent)}.dot-gray{background:var(--muted)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Clock buttons */
+.clock-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.clock-btn{padding:1.4rem;border:none;border-radius:16px;cursor:pointer;font-family:'Inter',sans-serif;font-size:15px;font-weight:600;position:relative;overflow:hidden;transition:all .3s ease;display:flex;flex-direction:column;align-items:center;gap:8px}
+.clock-btn span.ico{font-size:28px;display:block}
+.clock-btn:hover{transform:translateY(-3px)}
+.clock-btn:active{transform:translateY(0) scale(.98)}
+.btn-in{background:linear-gradient(135deg,#059669,#10b981);color:#fff;box-shadow:0 8px 25px rgba(16,185,129,.3)}
+.btn-out{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;box-shadow:0 8px 25px rgba(99,102,241,.3)}
+.btn-in:disabled,.btn-out:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+
+/* Message */
+.msg-box{border-radius:12px;padding:14px 18px;font-size:14px;display:none;align-items:center;gap:10px;margin-bottom:1.5rem;animation:slideIn .4s ease both}
+@keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.msg-success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:#6ee7b7;display:flex}
+.msg-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#fca5a5;display:flex}
+
+/* Stats row */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;display:flex;flex-direction:column;gap:6px}
+.stat-label{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.05em;text-transform:uppercase}
+.stat-val{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700}
+.stat-sub{font-size:12px;color:var(--muted)}
+
+/* Info cards */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.info-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem}
+.info-card h3{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.info-row:last-child{border:none}
+.info-row span:first-child{color:var(--muted)}
+.info-row span:last-child{font-weight:500}
+
+.demo-bar{display:flex;align-items:center;gap:8px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);color:#fcd34d;font-size:12px;padding:10px 16px;border-radius:9px;margin-bottom:1.5rem}
+
+/* Live clock */
+#liveclock{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:var(--accent);background:rgba(99,102,241,.08);padding:8px 16px;border-radius:8px;border:1px solid rgba(99,102,241,.2)}
+
+/* History Page */
+.section{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:1.75rem;margin-bottom:1.5rem}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;margin-bottom:1.25rem;display:flex;align-items:center;gap:8px}
+.month-badge{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#a5b4fc;font-size:12px;padding:4px 12px;border-radius:20px;font-weight:600}
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--s2);padding:11px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+td{padding:11px 14px;border-top:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.b-late{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);color:#fcd34d}
+.b-ontime{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:#34d399}
+.b-done{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#a5b4fc}
+.b-active{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:#34d399}
+.b-extra{background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.25);color:#5eead4}
+.empty-state{text-align:center;padding:3rem 2rem;color:var(--muted)}
+.empty-state .es-icon{font-size:48px;margin-bottom:1rem;opacity:.4}
+.empty-state p{font-size:14px}
+
+/* History summary cards */
+.hist-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.hcard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem;text-align:center}
+.hcard-val{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;margin-bottom:4px}
+.hcard-lbl{font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+
+/* System Info Page */
+.sysinfo-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.sys-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem}
+.sys-card h3{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1rem;display:flex;align-items:center;gap:6px}
+.sys-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.sys-row:last-child{border:none}
+.sys-row span:first-child{color:var(--muted)}
+.sys-row span:last-child{font-weight:500}
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.pill-green{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#34d399}
+.pill-warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#fcd34d}
+.pill-blue{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);color:#a5b4fc}
+.pill-teal{background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.3);color:#5eead4}
+.office-banner{background:linear-gradient(135deg,rgba(20,184,166,.08),rgba(99,102,241,.08));border:1px solid rgba(20,184,166,.2);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1rem}
+.ob-icon{font-size:36px}
+.ob-title{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700}
+.ob-sub{font-size:13px;color:var(--muted);margin-top:3px}
+</style>
+</head>
+<body>
+<div class="bg-fixed">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+</div>
+<div class="grid"></div>
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-icon">🏢</div>
+      <div>
+        <div class="sb-title">Attendance</div>
+        <div class="sb-sub">Employee Portal</div>
+      </div>
+    </div>
+    <div class="sb-profile">
+      <div class="sb-avatar">{{ name[0] }}</div>
+      <div class="sb-name">{{ name }}</div>
+      <div class="sb-dept">{{ department }}</div>
+      <div class="sb-id">ID: {{ employee_id }}</div>
+      <div class="sb-office-tag">🏙️ {{ office }}</div>
+    </div>
+    <nav class="sb-nav">
+      <a class="sb-link active" id="nav-dashboard" onclick="showPage('dashboard')">🏠 Dashboard</a>
+      <a class="sb-link" id="nav-history" onclick="showPage('history')">📋 My History</a>
+      <a class="sb-link" id="nav-info" onclick="showPage('info')">ℹ️ System Info</a>
+    </nav>
+    <a href="/logout" class="sb-logout">🚪 Sign Out</a>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="page-heading">Good {{ 'morning' if now_time < '12:00 PM' else ('afternoon' if now_time < '06:00 PM' else 'evening') }}, {{ name.split()[0] }} 👋</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px">{{ today }}</div>
+      </div>
+      <div id="liveclock">--:--:--</div>
+    </div>
+
+    <!-- ===== DASHBOARD PAGE ===== -->
+    <div class="page active" id="page-dashboard">
+      <!-- Status Hero -->
+      <div class="status-hero">
+        <div class="ring-wrap">
+          <div class="ring-bg" id="ring">
+            <div class="ring-icon" id="ring-icon">
+              {% if status == 'Clocked In' %}🟢{% elif status == 'On Break' %}☕{% elif status == 'Clocked Out' %}🔵{% else %}⚪{% endif %}
+            </div>
+          </div>
+          <svg style="position:absolute;inset:0;width:120px;height:120px" id="ring-svg">
+            <circle cx="60" cy="60" r="56" fill="none" stroke-width="3"
+              stroke="{% if status=='Clocked In' %}#10b981{% elif status=='On Break' %}#f59e0b{% elif status=='Clocked Out' %}#6366f1{% else %}#1e2d47{% endif %}"
+              stroke-dasharray="352" stroke-dashoffset="0" stroke-linecap="round"
+              transform="rotate(-90 60 60)" style="transition:1s ease"/>
+          </svg>
+        </div>
+        <div class="status-info">
+          <h2 id="status-text">{{ status }}</h2>
+          <p id="status-sub">
+            {% if status == 'On Break' and today_record %}
+              On break since {{ today_record.break_start_time }}
+            {% elif status == 'Clocked In' and today_record %}
+              Clocked in at {{ today_record.clock_in_time }} · {{ 'Late arrival ⚠️ (+' + today_record.late_minutes + ' min)' if today_record.late == 'Yes' else 'On time ✓' }}
+            {% elif status == 'Clocked Out' and today_record %}
+              Worked {{ today_record.total_hours }} hours today
+              {% if today_record.extra_hours and today_record.extra_hours != '0' %} · +{{ today_record.extra_hours }}h overtime 🌟{% endif %}
+            {% else %}
+              You haven't clocked in yet today
+            {% endif %}
+          </p>
+          <div class="status-badge {% if status=='Clocked In' %}badge-in{% elif status=='Clocked Out' %}badge-out{% else %}badge-none{% endif %}">
+            <div class="dot {% if status=='Clocked In' %}dot-green{% elif status=='On Break' %}dot-amber{% elif status=='Clocked Out' %}dot-purple{% else %}dot-gray{% endif %}" style="{% if status=='On Break' %}background:#f59e0b{% endif %}"></div>
+            {{ status }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Message Box -->
+      <div class="msg-box" id="msg">
+        <span id="msg-icon">✅</span>
+        <span id="msg-text"></span>
+      </div>
+
+      <!-- Clock Buttons -->
+      <div class="clock-grid">
+        <button class="clock-btn btn-in" id="btn-in" onclick="doAction('in')"
+          {% if status == 'Clocked In' or status == 'On Break' or status == 'Clocked Out' %}disabled{% endif %}>
+          <span class="ico">🟢</span>
+          Clock In
+        </button>
+        <button class="clock-btn btn-out" id="btn-out" onclick="doAction('out')"
+          {% if status != 'Clocked In' %}disabled{% endif %}>
+          <span class="ico">🔴</span>
+          Clock Out
+        </button>
+      </div>
+      <div class="clock-grid" style="margin-top:12px">
+        <button class="clock-btn btn-in" id="btn-startbreak" onclick="doAction('startbreak')"
+          style="background:linear-gradient(135deg,#f59e0b,#d97706)"
+          {% if status != 'Clocked In' %}disabled{% endif %}>
+          <span class="ico">☕</span>
+          Start Break
+        </button>
+        <button class="clock-btn btn-out" id="btn-endbreak" onclick="doAction('endbreak')"
+          style="background:linear-gradient(135deg,#6366f1,#4f46e5)"
+          {% if status != 'On Break' %}disabled{% endif %}>
+          <span class="ico">▶️</span>
+          End Break
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Login Time</div>
+          <div class="stat-val" style="font-size:16px">{{ login_time.split(' ')[1] if login_time else '--' }}</div>
+          <div class="stat-sub">Today's session</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Office</div>
+          <div class="stat-val" style="font-size:14px">{{ office }}</div>
+          <div class="stat-sub">{{ department }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Today</div>
+          <div class="stat-val" style="font-size:15px" id="hours-worked">
+            {% if status == 'Clocked Out' and today_record %}{{ today_record.total_hours }}h{% else %}--{% endif %}
+          </div>
+          <div class="stat-sub">Hours worked</div>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="info-grid">
+        <div class="info-card">
+          <h3>📋 Today's Record</h3>
+          <div class="info-row"><span>Date</span><span>{{ today }}</span></div>
+          <div class="info-row"><span>Clock In</span><span id="ci-time">{{ today_record.clock_in_time if today_record else '—' }}</span></div>
+          {% if today_record and today_record.break_start_time %}
+          <div class="info-row"><span>Break Start</span><span>{{ today_record.break_start_time }}</span></div>
+          <div class="info-row"><span>Break End</span><span>{{ today_record.break_end_time or '—' }}</span></div>
+          {% if today_record.break_minutes and today_record.break_minutes != '0' %}
+          <div class="info-row"><span>Break Duration</span><span>{{ today_record.break_minutes }} min</span></div>
+          {% endif %}
+          {% endif %}
+          <div class="info-row"><span>Clock Out</span><span id="co-time">{{ today_record.clock_out_time if today_record and today_record.clock_out_time else '—' }}</span></div>
+          <div class="info-row"><span>Status</span>
+            <span style="color:{% if status=='Clocked In' %}#10b981{% elif status=='Clocked Out' %}#a5b4fc{% else %}var(--muted){% endif %}">{{ status }}</span>
+          </div>
+          {% if today_record and today_record.late == 'Yes' %}
+          <div class="info-row"><span>Punctuality</span><span style="color:#f59e0b">⚠️ Late (+{{ today_record.late_minutes }} min)</span></div>
+          {% endif %}
+          {% if today_record and today_record.extra_hours and today_record.extra_hours != '0' %}
+          <div class="info-row"><span>Overtime</span><span style="color:#14b8a6">+{{ today_record.extra_hours }}h 🌟</span></div>
+          {% endif %}
+        </div>
+        <div class="info-card">
+          <h3>🏢 Office Details</h3>
+          <div class="info-row"><span>Office</span><span style="color:#5eead4">{{ office }}</span></div>
+          <div class="info-row"><span>Department</span><span>{{ department }}</span></div>
+          <div class="info-row"><span>Employee ID</span><span>{{ employee_id }}</span></div>
+          <div class="info-row"><span>Work Standard</span><span>{{ work_hours }}h/day</span></div>
+          <div class="info-row"><span>Shift Start</span><span>09:00 AM</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== HISTORY PAGE ===== -->
+    <div class="page" id="page-history">
+      <div class="section-title">📋 My Attendance History <span class="month-badge">{{ history_month }}</span></div>
+
+      {% if history %}
+      <!-- Summary Cards -->
+      <div class="hist-summary">
+        <div class="hcard">
+          <div class="hcard-val" style="color:#10b981">{{ history|selectattr('status','equalto','Completed')|list|length }}</div>
+          <div class="hcard-lbl">Days Present</div>
+        </div>
+        <div class="hcard">
+          <div class="hcard-val" style="color:#f59e0b">{{ history|selectattr('late','equalto','Yes')|list|length }}</div>
+          <div class="hcard-lbl">Late Days</div>
+        </div>
+        <div class="hcard">
+          <div class="hcard-val" style="color:#6366f1">
+            {% set ns = namespace(total=0) %}
+            {% for r in history %}{% if r.total_hours %}{% set ns.total = ns.total + r.total_hours|float %}{% endif %}{% endfor %}
+            {{ "%.1f"|format(ns.total) }}h
+          </div>
+          <div class="hcard-lbl">Total Hours</div>
+        </div>
+        <div class="hcard">
+          <div class="hcard-val" style="color:#14b8a6">
+            {% set ns2 = namespace(extra=0) %}
+            {% for r in history %}{% if r.extra_hours %}{% set ns2.extra = ns2.extra + r.extra_hours|float %}{% endif %}{% endfor %}
+            {{ "%.1f"|format(ns2.extra) }}h
+          </div>
+          <div class="hcard-lbl">Overtime</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Clock In</th>
+                <th>Clock Out</th>
+                <th>Total Hours</th>
+                <th>Punctuality</th>
+                <th>Overtime</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in history %}
+              <tr>
+                <td><strong>{{ r.date }}</strong></td>
+                <td>{{ r.clock_in_time or '—' }}</td>
+                <td>{{ r.clock_out_time or '—' }}</td>
+                <td>
+                  {% if r.total_hours %}<strong>{{ r.total_hours }}h</strong>{% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if r.late == 'Yes' %}
+                    <span class="badge b-late">⚠ Late +{{ r.late_minutes }}min</span>
+                  {% else %}
+                    <span class="badge b-ontime">✓ On Time</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if r.extra_hours and r.extra_hours != '0' and r.extra_hours|float > 0 %}
+                    <span class="badge b-extra">+{{ r.extra_hours }}h</span>
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if r.status == 'Completed' %}
+                    <span class="badge b-done">✓ Done</span>
+                  {% else %}
+                    <span class="badge b-active">● Active</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="es-icon">📭</div>
+        <p>No attendance records found for <strong>{{ history_month }}</strong>.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ===== SYSTEM INFO PAGE ===== -->
+    <div class="page" id="page-info">
+      <div class="office-banner">
+        <div class="ob-icon">🏙️</div>
+        <div>
+          <div class="ob-title">{{ office }}</div>
+          <div class="ob-sub">Your assigned office location</div>
+        </div>
+      </div>
+
+      <div class="sysinfo-grid">
+        <div class="sys-card">
+          <h3>👤 Employee Details</h3>
+          <div class="sys-row"><span>Full Name</span><span>{{ name }}</span></div>
+          <div class="sys-row"><span>Employee ID</span><span style="font-family:monospace;color:var(--accent)">{{ employee_id }}</span></div>
+          <div class="sys-row"><span>Department</span><span>{{ department }}</span></div>
+          <div class="sys-row"><span>Office</span><span style="color:#5eead4">{{ office }}</span></div>
+          <div class="sys-row"><span>Role</span><span>Employee</span></div>
+        </div>
+
+        <div class="sys-card">
+          <h3>⚙️ System Status</h3>
+          <div class="sys-row">
+            <span>Session</span>
+            <span class="status-pill pill-green"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;display:inline-block"></span> Active</span>
+          </div>
+          <div class="sys-row">
+            <span>IP Verification</span>
+            <span class="status-pill pill-green">Active</span>
+          </div>
+          <div class="sys-row"><span>Last Login</span><span>{{ login_time or '—' }}</span></div>
+          <div class="sys-row"><span>Portal Version</span><span style="color:var(--muted)">v2.0.0</span></div>
+        </div>
+
+        <div class="sys-card">
+          <h3>🕐 Work Policy</h3>
+          <div class="sys-row"><span>Standard Hours</span><span>{{ work_hours }} hours/day</span></div>
+          <div class="sys-row"><span>Shift Start</span><span>09:00 AM</span></div>
+          <div class="sys-row"><span>Late Threshold</span><span>After 09:05 AM</span></div>
+          <div class="sys-row"><span>Overtime</span><span>After {{ work_hours }}h from clock-in</span></div>
+          <div class="sys-row"><span>Tracking</span><span class="status-pill pill-teal">IP-Based</span></div>
+        </div>
+
+        <div class="sys-card">
+          <h3>📊 This Month Snapshot</h3>
+          {% set ns3 = namespace(days=0,late=0,extra=0.0) %}
+          {% for r in history %}
+            {% if r.status == 'Completed' %}{% set ns3.days = ns3.days + 1 %}{% endif %}
+            {% if r.late == 'Yes' %}{% set ns3.late = ns3.late + 1 %}{% endif %}
+            {% if r.extra_hours %}{% set ns3.extra = ns3.extra + r.extra_hours|float %}{% endif %}
+          {% endfor %}
+          <div class="sys-row"><span>Days Worked (Last Mo.)</span><span>{{ ns3.days }}</span></div>
+          <div class="sys-row"><span>Late Days</span><span style="color:{% if ns3.late > 0 %}#f59e0b{% else %}#10b981{% endif %}">{{ ns3.late }}</span></div>
+          <div class="sys-row"><span>Total Overtime</span><span style="color:#14b8a6">{{ "%.1f"|format(ns3.extra) }}h</span></div>
+          <div class="sys-row"><span>Attendance Rate</span>
+            <span style="color:#10b981">
+              {% if ns3.days > 0 %}Good{% else %}—{% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// Live clock
+function tick(){
+  const now=new Date();
+  document.getElementById('liveclock').textContent=now.toLocaleTimeString('en-US',{hour12:false});
+}
+tick(); setInterval(tick,1000);
+
+let status='{{ status }}';
+
+function showPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('nav-'+page).classList.add('active');
+  const titles={dashboard:'Dashboard',history:'My History',info:'System Info'};
+  document.getElementById('page-heading').textContent=titles[page]||'Dashboard';
+}
+
+// Check URL hash on load
+if(location.hash==='#history') showPage('history');
+else if(location.hash==='#info') showPage('info');
+
+function showMsg(txt,ok){
+  const box=document.getElementById('msg');
+  box.className='msg-box '+(ok?'msg-success':'msg-error');
+  document.getElementById('msg-icon').textContent=ok?'✅':'❌';
+  document.getElementById('msg-text').textContent=txt;
+  box.style.display='flex';
+  setTimeout(()=>{box.style.display='none'},7000);
+}
+
+function updateUI(newStatus, extra){
+  status=newStatus;
+  const st=document.getElementById('status-text');
+  const sub=document.getElementById('status-sub');
+  const badge=document.querySelector('.status-badge');
+  const ringIcon=document.getElementById('ring-icon');
+  const circle=document.querySelector('#ring-svg circle');
+
+  st.textContent=newStatus;
+  if(newStatus==='Clocked In'){
+    ringIcon.textContent='🟢';
+    circle.setAttribute('stroke','#10b981');
+    badge.className='status-badge badge-in';
+    badge.innerHTML='<div class="dot dot-green"></div>Clocked In';
+    document.getElementById('btn-in').disabled=true;
+    document.getElementById('btn-out').disabled=false;
+    document.getElementById('btn-startbreak').disabled=false;
+    document.getElementById('btn-endbreak').disabled=true;
+    if(extra.time){
+      let lateStr=extra.late?(' · ⚠️ Late +'+extra.late_minutes+'min'):' · On time ✓';
+      sub.textContent='Clocked in at '+extra.time+lateStr;
+      document.getElementById('ci-time').textContent=extra.time;
+    }
+  } else if(newStatus==='On Break'){
+    ringIcon.textContent='☕';
+    circle.setAttribute('stroke','#f59e0b');
+    badge.className='status-badge badge-in';
+    badge.innerHTML='<div class="dot" style="background:#f59e0b"></div>On Break';
+    document.getElementById('btn-in').disabled=true;
+    document.getElementById('btn-out').disabled=true;
+    document.getElementById('btn-startbreak').disabled=true;
+    document.getElementById('btn-endbreak').disabled=false;
+    if(extra.time){
+      sub.textContent='Break started at '+extra.time;
+    }
+  } else if(newStatus==='Clocked Out'){
+    ringIcon.textContent='🔵';
+    circle.setAttribute('stroke','#6366f1');
+    badge.className='status-badge badge-out';
+    badge.innerHTML='<div class="dot dot-purple"></div>Clocked Out';
+    document.getElementById('btn-in').disabled=true;
+    document.getElementById('btn-out').disabled=true;
+    document.getElementById('btn-startbreak').disabled=true;
+    document.getElementById('btn-endbreak').disabled=true;
+    if(extra.hours){
+      let extraStr=extra.extra_hours>0?' · +'+extra.extra_hours+'h overtime 🌟':'';
+      sub.textContent='Worked '+extra.hours+' hours today'+extraStr;
+      document.getElementById('hours-worked').textContent=extra.hours+'h';
+      document.getElementById('co-time').textContent=new Date().toLocaleTimeString('en-US',{hour12:false});
+    }
+  }
+}
+
+const ACTION_URLS={in:'/clock-in',out:'/clock-out',startbreak:'/start-break',endbreak:'/end-break'};
+const ACTION_BTN_ID={in:'in',out:'out',startbreak:'startbreak',endbreak:'endbreak'};
+
+async function doAction(type){
+  const btn=document.getElementById('btn-'+ACTION_BTN_ID[type]);
+  btn.disabled=true; btn.style.opacity='.6';
+  const url=ACTION_URLS[type];
+  try{
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'}});
+    let d=null;
+    const text=await r.text();
+    if(text){
+      try{ d=JSON.parse(text); } catch(e){ d=null; }
+    }
+
+    if(!r.ok){
+      const message=d?.message || `Request failed with status ${r.status}`;
+      showMsg(message, false);
+      btn.disabled=false; btn.style.opacity='1';
+      return;
+    }
+
+    if(!d || typeof d !== 'object'){
+      showMsg('The server returned an unexpected response. Please try again.', false);
+      btn.disabled=false; btn.style.opacity='1';
+      return;
+    }
+
+    showMsg(d.message,d.success);
+    if(d.success){
+      if(type==='in') updateUI('Clocked In',{time:d.time,late:d.late,late_minutes:d.late_minutes||0});
+      else if(type==='startbreak') updateUI('On Break',{time:d.time});
+      else if(type==='endbreak') updateUI('Clocked In',{time:document.getElementById('ci-time').textContent});
+      else updateUI('Clocked Out',{hours:d.hours,extra_hours:d.extra_hours||0});
+    } else {
+      btn.disabled=false; btn.style.opacity='1';
+    }
+  }catch(e){
+    showMsg('Unable to reach the server. Please try again.', false);
+    btn.disabled=false; btn.style.opacity='1';
+  }
+}
+</script>
+</body>
+</html>
