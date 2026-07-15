@@ -1,0 +1,5 @@
+record_id,employee_id,employee_name,department,office,date,clock_in_time,clock_out_time,total_hours,late_minutes,extra_hours,clock_in_ip,clock_out_ip,status,late,total_break_time,total_working_time,net_working_time,break_count,on_break,current_break_id
+1,101,John Smith,Recruiting,Head Office,2026-07-07,14:00:01,14:06:13,0.1,300,0.0,192.168.0.10,127.0.0.1,Completed,Yes,00:00:17,00:06:12,00:05:55,4,No,
+2,102,Aisha Khan,Sales,Branch Office,2026-07-07,14:04:51,,,304,,127.0.0.1,,Active,Yes,00:00:00,00:00:00,00:00:00,0,No,
+3,103,Ravi Patel,Operations,South Office,2026-07-07,14:05:19,,,305,,127.0.0.1,,Active,Yes,00:06:24,00:00:00,00:00:00,1,No,
+4,102,Aisha Khan,Sales,Branch Office,2026-07-15,14:02:48,14:03:14,0.01,302,0.0,192.168.0.51,192.168.0.51,Completed,Yes,00:00:08,00:00:26,00:00:18,1,No,
