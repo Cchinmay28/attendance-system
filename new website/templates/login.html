@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Office Attendance - Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+body{min-height:100vh;display:grid;place-items:center;padding:24px;background:
+  radial-gradient(circle at 12% 8%, rgba(32,51,122,.06), transparent 42%),
+  radial-gradient(circle at 88% 92%, rgba(181,114,26,.05), transparent 45%),
+  var(--bg);}
+.auth{width:100%;max-width:420px}
+.auth-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{width:38px;height:38px;border-radius:9px;background:var(--brand);color:#fff;display:grid;place-items:center;font:700 14px var(--font-display)}
+.brand strong{display:block;font:700 16px var(--font-display)}
+.brand span{display:block;color:var(--muted);font-size:11px;letter-spacing:.05em;text-transform:uppercase}
+.panel{padding:30px 28px}
+.panel h1{font-size:21px;margin:0 0 4px}
+.panel .sub{color:var(--muted);font-size:13px;margin:0 0 22px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:4px;margin-bottom:22px}
+.tab{border:0;background:transparent;border-radius:6px;padding:10px;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer}
+.tab.active{background:var(--surface);color:var(--brand);box-shadow:0 3px 10px rgba(16,20,30,.08)}
+.tabpanel{display:none}
+.tabpanel.active{display:block}
+.password-wrap{position:relative}
+.password-wrap input{width:100%;padding-right:52px}
+.eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:var(--surface-2);border-radius:6px;padding:8px 10px;cursor:pointer;color:var(--muted);font-size:11px;font-weight:700}
+.err{background:var(--danger-tint);border:1px solid #f2c2be;color:var(--danger);border-radius:8px;padding:11px 12px;margin-bottom:16px;font-weight:600;font-size:13px}
+.submit-row{margin-top:20px}
+.footnote{text-align:center;margin-top:18px;color:var(--muted);font-size:12px}
+.clock{margin-top:18px;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:12px}
+.clock .time{font-family:var(--font-mono);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+</style>
+<script>
+(function(){const saved=localStorage.getItem('attendance-theme');const preferred=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=saved||preferred;})();
+</script>
+</head>
+<body>
+<div class="auth">
+  <div class="auth-top">
+    <div class="brand"><div class="brand-mark">OA</div><div><strong>OfficeAttend</strong><span>Workforce time tracking</span></div></div>
+    <button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Toggle dark and light theme">
+      <svg id="theme-icon" class="icon" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/><circle cx="12" cy="12" r="4.5"/></svg>
+      <span id="theme-label">Theme</span>
+    </button>
+  </div>
+
+  <section class="card panel" aria-label="Sign in">
+    <h1>Sign in</h1>
+    <p class="sub">Access is limited to devices on the office network.</p>
+
+    <div class="tabs" role="tablist" aria-label="Login type">
+      <button class="tab {% if not error_admin %}active{% endif %}" id="tab-emp" type="button" onclick="switchTab('emp')" role="tab">Employee</button>
+      <button class="tab {% if error_admin %}active{% endif %}" id="tab-admin" type="button" onclick="switchTab('admin')" role="tab">Admin</button>
+    </div>
+
+    <div id="panel-emp" class="tabpanel {% if not error_admin %}active{% endif %}">
+      {% if error_emp %}<div class="err" role="alert">{{ error_emp }}</div>{% endif %}
+      <form method="POST">
+        <input type="hidden" name="login_type" value="employee">
+        <div class="field" style="margin-bottom:14px"><label for="employee_id">Employee ID</label><input id="employee_id" name="employee_id" type="text" autocomplete="username" required></div>
+        <div class="field"><label for="employee_password">Password</label>
+          <div class="password-wrap"><input id="employee_password" name="employee_password" type="password" autocomplete="current-password" required><button class="eye" type="button" onclick="togglePassword('employee_password',this)" aria-label="Show password">SHOW</button></div>
+        </div>
+        <div class="submit-row"><button class="btn" style="width:100%" type="submit">Sign in as employee</button></div>
+      </form>
+    </div>
+
+    <div id="panel-admin" class="tabpanel {% if error_admin %}active{% endif %}">
+      {% if error_admin %}<div class="err" role="alert">{{ error_admin }}</div>{% endif %}
+      <form method="POST">
+        <input type="hidden" name="login_type" value="admin">
+        <div class="field" style="margin-bottom:14px"><label for="admin_id">Admin ID</label><input id="admin_id" name="admin_id" type="text" autocomplete="username" required></div>
+        <div class="field"><label for="admin_password">Password</label>
+          <div class="password-wrap"><input id="admin_password" name="admin_password" type="password" autocomplete="current-password" required><button class="eye" type="button" onclick="togglePassword('admin_password',this)" aria-label="Show password">SHOW</button></div>
+        </div>
+        <div class="submit-row"><button class="btn btn-outline" style="width:100%" type="submit">Sign in as admin</button></div>
+      </form>
+    </div>
+
+    {% if demo %}<div class="notice notice-info" style="margin-top:16px">Demo mode is enabled — office network verification is bypassed.</div>{% endif %}
+
+    <div class="clock"><span>Local time</span><span class="time" id="liveclock">--:--:--</span></div>
+  </section>
+
+  <p class="footnote">Having trouble signing in? Contact your office administrator.</p>
+</div>
+<script>
+function switchTab(tab){const emp=tab==='emp';document.getElementById('tab-emp').classList.toggle('active',emp);document.getElementById('tab-admin').classList.toggle('active',!emp);document.getElementById('panel-emp').classList.toggle('active',emp);document.getElementById('panel-admin').classList.toggle('active',!emp)}
+function togglePassword(id,btn){const input=document.getElementById(id);const showing=input.type==='text';input.type=showing?'password':'text';btn.textContent=showing?'SHOW':'HIDE';btn.setAttribute('aria-label',(showing?'Show':'Hide')+' password')}
+function syncThemeButton(){const dark=document.documentElement.dataset.theme==='dark';document.getElementById('theme-label').textContent=dark?'Dark':'Light'}
+function toggleTheme(){const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;localStorage.setItem('attendance-theme',next);syncThemeButton()}
+function tickClock(){document.getElementById('liveclock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false})}
+syncThemeButton();tickClock();setInterval(tickClock,1000);
+</script>
+</body>
+</html>
