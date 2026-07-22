@@ -1,1 +1,0 @@
-record_id,employee_id,employee_name,department,office,date,clock_in_time,clock_out_time,total_hours,late_minutes,extra_hours,clock_in_ip,clock_out_ip,status,late,total_break_time,total_working_time,net_working_time,break_count,on_break,current_break_id,early_departure_minutes
