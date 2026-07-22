@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Employee Management - OfficeAttend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+.layout{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:22px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{width:38px;height:38px;border-radius:9px;background:var(--brand);color:#fff;display:grid;place-items:center;font:700 14px var(--font-display)}
+.brand strong{display:block;font:700 15px var(--font-display)}
+.brand span{display:block;color:var(--muted);font-size:11px}
+.nav{display:grid;gap:4px}
+.nav a{display:flex;align-items:center;gap:10px;border-radius:8px;padding:10px 11px;font-weight:600;font-size:13px;color:var(--muted)}
+.nav a.active,.nav a:hover{background:var(--brand-tint);color:var(--brand-ink)}
+.logout{margin-top:auto;display:flex;align-items:center;gap:10px;border-radius:8px;padding:10px 11px;font-weight:600;font-size:13px;background:var(--surface-2);border:1px solid var(--border);color:var(--muted)}
+.main{min-width:0;padding:28px}
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:22px;flex-wrap:wrap}
+.title h2{font-size:24px;margin:0}.title p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.panel{padding:22px;margin-bottom:16px}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+table{min-width:1180px}
+.details-row{display:none}.details-row.show{display:table-row}
+.details{background:var(--surface-2);border-radius:9px;padding:14px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;color:var(--muted);font-size:13px}
+.page-actions{display:flex;gap:8px}
+@media (max-width:1050px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.main{padding:18px}}
+</style>
+<script>
+(function(){const saved=localStorage.getItem('attendance-theme');const preferred=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=saved||preferred;})();
+</script>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar" aria-label="Admin navigation">
+    <div class="brand"><div class="brand-mark">OA</div><div><strong>OfficeAttend</strong><span>Admin console</span></div></div>
+    <nav class="nav">
+      <a href="/admin"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</a>
+      <a class="active" href="/admin/employees"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>Employees</a>
+    </nav>
+    <a class="logout" href="/logout"><svg class="icon" viewBox="0 0 24 24"><path d="M9 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Sign out</a>
+  </aside>
+  <main class="main">
+    <header class="header">
+      <div class="title"><h2>Employee management</h2><p>{{ today }}</p></div>
+      <button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Toggle dark and light theme"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/><circle cx="12" cy="12" r="4.5"/></svg><span id="theme-label">Theme</span></button>
+    </header>
+    {% if demo %}<div class="notice notice-info" style="margin-bottom:18px">Demo mode is enabled - office network verification is bypassed.</div>{% endif %}
+    {% if request.args.get('employee_message') %}<div class="notice {% if request.args.get('employee_status') == 'error' %}notice-error{% else %}notice-info{% endif %}" style="margin-bottom:14px">{{ request.args.get('employee_message') }}</div>{% endif %}
+
+    <section class="card panel">
+      <div class="section-head"><h3>Add employee</h3><span style="color:var(--muted);font-size:13px">{{ employees|length }} total</span></div>
+      <form method="POST" action="/admin/employees/add" class="form-grid" onsubmit="lockSubmit(this)">
+        <div class="field"><label for="new-employee-id">Employee ID</label><input id="new-employee-id" name="employee_id" required></div>
+        <div class="field"><label for="new-name">Name</label><input id="new-name" name="name" required></div>
+        <div class="field"><label for="new-username">Username</label><input id="new-username" name="username" placeholder="Defaults to ID"></div>
+        <div class="field"><label for="new-department">Department</label><input id="new-department" name="department" required></div>
+        <div class="field"><label for="new-office">Office</label><select id="new-office" name="office">{% for office in offices %}<option value="{{ office }}">{{ office }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="new-password">Password</label><input id="new-password" name="password" type="password" required></div>
+        <div class="field"><label for="new-shift-start">Shift start</label><input id="new-shift-start" name="shift_start" type="time" value="09:00" required></div>
+        <div class="field"><label for="new-shift-end">Shift end</label><input id="new-shift-end" name="shift_end" type="time" value="18:00" required></div>
+        <div class="field"><label for="new-allowed-ips">Allowed IPs</label><input id="new-allowed-ips" name="allowed_ips" placeholder="192.168.0.10, 10.0.0.0/24"></div>
+        <div class="field"><label for="new-enabled">Status</label><select id="new-enabled" name="enabled"><option value="Yes">Enabled</option><option value="No">Disabled</option></select></div>
+        <div class="field"><label>&nbsp;</label><button class="btn" type="submit">Add employee</button></div>
+      </form>
+    </section>
+
+    <section class="card panel">
+      <div class="section-head">
+        <h3>Employees</h3>
+        <div class="filters" role="search">
+          <div class="field"><label for="employee-search">Search</label><input id="employee-search" type="search" placeholder="Name, ID, username, IP" oninput="applyEmployeeFilters()"></div>
+          <div class="field"><label for="office-filter">Office</label><select id="office-filter" onchange="applyEmployeeFilters()"><option value="">All offices</option>{% for office in offices %}<option value="{{ office }}">{{ office }}</option>{% endfor %}</select></div>
+          <div class="field"><label for="status-filter">Status</label><select id="status-filter" onchange="applyEmployeeFilters()"><option value="">All statuses</option><option value="Yes">Enabled</option><option value="No">Disabled</option></select></div>
+          <div class="field"><button class="btn btn-outline" type="button" onclick="clearEmployeeFilters()">Clear</button></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="employee-table">
+          <thead><tr><th onclick="sortEmployees('id')">ID</th><th onclick="sortEmployees('name')">Name</th><th onclick="sortEmployees('username')">Username</th><th>Department</th><th onclick="sortEmployees('office')">Office</th><th>Shift</th><th>Allowed IPs</th><th onclick="sortEmployees('enabled')">Status</th><th>Actions</th></tr></thead>
+          <tbody id="employee-body">
+          {% for e in employees %}
+            <tr class="emp" data-key="{{ loop.index }}" data-id="{{ e.employee_id }}" data-name="{{ e.name|lower }}" data-username="{{ e.username|lower }}" data-office="{{ e.office }}" data-enabled="{{ e.enabled }}" data-search="{{ e.employee_id|lower }} {{ e.name|lower }} {{ e.username|lower }} {{ e.department|lower }} {{ e.office|lower }} {{ e.allowed_ips|lower }}">
+              <td class="mono">{{ e.employee_id }}</td><td><strong>{{ e.name }}</strong></td><td>{{ e.username }}</td><td>{{ e.department }}</td><td><span class="badge badge-brand">{{ e.office }}</span></td><td class="mono">{{ e.shift_start }} - {{ e.shift_end }}</td><td class="mono">{{ e.allowed_ips or 'Office rule' }}</td><td><span class="badge {% if e.enabled == 'Yes' %}badge-success{% else %}badge-neutral{% endif %}">{{ 'Enabled' if e.enabled == 'Yes' else 'Disabled' }}</span></td><td><button class="btn btn-outline" type="button" onclick="toggleDetails('{{ loop.index }}')">Edit</button></td>
+            </tr>
+            <tr class="details-row" id="details-{{ loop.index }}"><td colspan="9"><div class="details">
+              <form id="edit-{{ loop.index }}" method="POST" action="/admin/employees/{{ e.employee_id }}/edit" class="form-grid" onsubmit="lockSubmit(this)">
+                <div class="field"><label>Name</label><input name="name" value="{{ e.name }}" required></div>
+                <div class="field"><label>Username</label><input name="username" value="{{ e.username }}"></div>
+                <div class="field"><label>Department</label><input name="department" value="{{ e.department }}" required></div>
+                <div class="field"><label>Office</label><select name="office">{% for office in offices %}<option value="{{ office }}" {% if office == e.office %}selected{% endif %}>{{ office }}</option>{% endfor %}</select></div>
+                <div class="field"><label>Password</label><input name="password" type="password" value="{{ e.password }}" required></div>
+                <div class="field"><label>Shift start</label><input name="shift_start" type="time" value="{{ e.shift_start or '09:00' }}" required></div>
+                <div class="field"><label>Shift end</label><input name="shift_end" type="time" value="{{ e.shift_end or '18:00' }}" required></div>
+                <div class="field"><label>Allowed IPs</label><input name="allowed_ips" value="{{ e.allowed_ips }}" placeholder="Blank uses office rule"></div>
+                <div class="field"><label>Status</label><select name="enabled"><option value="Yes" {% if e.enabled == 'Yes' %}selected{% endif %}>Enabled</option><option value="No" {% if e.enabled == 'No' %}selected{% endif %}>Disabled</option></select></div>
+                <div class="field"><label>&nbsp;</label><button class="btn" type="submit">Save changes</button></div>
+              </form>
+              <form method="POST" action="/admin/employees/{{ e.employee_id }}/delete" onsubmit="return confirm('Delete employee {{ e.employee_id }}?') && lockSubmit(this)" style="margin-top:10px"><button class="btn btn-danger" type="submit">Delete employee</button></form>
+            </div></td></tr>
+          {% else %}
+            <tr><td colspan="9" class="empty">No employees configured.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination"><span id="employee-page-info">Showing 0 employees</span><div class="page-actions"><button class="btn btn-outline" type="button" onclick="prevEmployeePage()">Previous</button><button class="btn" type="button" onclick="nextEmployeePage()">Next</button></div></div>
+    </section>
+  </main>
+</div>
+<script>
+function syncThemeButton(){const dark=document.documentElement.dataset.theme==='dark';document.getElementById('theme-label').textContent=dark?'Dark':'Light'}
+function toggleTheme(){const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;localStorage.setItem('attendance-theme',next);syncThemeButton()}
+syncThemeButton();
+function lockSubmit(form){if(form.dataset.submitted==='1')return false;form.dataset.submitted='1';form.querySelectorAll('button[type="submit"]').forEach(b=>{b.disabled=true;b.classList.add('loading')});return true}
+const empRows=[...document.querySelectorAll('#employee-body tr.emp')];let empFiltered=[...empRows],empPage=1,empPageSize=10,empSortDir=1;
+function empDetails(row){return document.getElementById('details-'+row.dataset.key)}
+function renderEmployees(){empRows.forEach(r=>{r.style.display='none';const d=empDetails(r);if(d){d.style.display='none';d.classList.remove('show')}});const start=(empPage-1)*empPageSize;empFiltered.slice(start,start+empPageSize).forEach(r=>r.style.display='');document.getElementById('employee-page-info').textContent=`Showing ${empFiltered.length?start+1:0}-${Math.min(start+empPageSize,empFiltered.length)} of ${empFiltered.length} employees`}
+function applyEmployeeFilters(){const q=document.getElementById('employee-search').value.toLowerCase().trim(),office=document.getElementById('office-filter').value,status=document.getElementById('status-filter').value;empFiltered=empRows.filter(r=>(!q||r.dataset.search.includes(q))&&(!office||r.dataset.office===office)&&(!status||r.dataset.enabled===status));empPage=1;renderEmployees()}
+function clearEmployeeFilters(){['employee-search','office-filter','status-filter'].forEach(id=>document.getElementById(id).value='');empFiltered=[...empRows];empPage=1;renderEmployees()}
+function sortEmployees(key){empSortDir*=-1;empFiltered.sort((a,b)=>String(a.dataset[key]||'').localeCompare(String(b.dataset[key]||''))*empSortDir);renderEmployees()}
+function nextEmployeePage(){if(empPage*empPageSize<empFiltered.length){empPage++;renderEmployees()}}function prevEmployeePage(){if(empPage>1){empPage--;renderEmployees()}}
+function toggleDetails(id){const row=document.getElementById('details-'+id);if(!row)return;row.classList.toggle('show');row.style.display=row.classList.contains('show')?'table-row':'none'}
+renderEmployees();
+</script>
+</body>
+</html>

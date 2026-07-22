@@ -1,0 +1,4 @@
+employee_id,name,department,office,password,username,shift_start,shift_end,allowed_ips
+101,John Smith,Recruiting,Head Office,pass101,101,09:00,18:00,
+102,Aisha Khan,Sales,Branch Office,pass102,102,09:00,18:00,
+103,Ravi Patel,Operations,South Office,pass103,103,09:00,18:00,
